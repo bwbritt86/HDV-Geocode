@@ -109,7 +109,6 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="AddressTbl.cs" />
-    <Compile Include="JsonUtils.cs" />
     <Compile Include="LatLongTbl.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
