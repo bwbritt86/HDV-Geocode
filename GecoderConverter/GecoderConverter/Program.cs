@@ -109,10 +109,10 @@ namespace GecoderConverter
                             int numA = Int32.Parse(num[0]);
                             int numB = Int32.Parse(num[1]);
                             int stNum = ((Int32.Parse(num[0]) + Int32.Parse(num[1])) / 2);
-                            
+
                             //Create address string for use with geocoder
                             String crimeAddress = null;
-                        
+
                             if (aTbl.Suffix == "" && aTbl.Type == "")
                             {
                                 crimeAddress = stNum.ToString() + "+" + aTbl.Street + ",+HOUSTON,+TX";
@@ -130,22 +130,27 @@ namespace GecoderConverter
                                 crimeAddress = stNum.ToString() + "+" + aTbl.Street + "+" + aTbl.Type + ",+HOUSTON,+TX";
                             }
 
-                            System.Threading.Thread.Sleep(1000);
+                            System.Threading.Thread.Sleep(2000);
+
                             //Retrieve Lat-Long coordinates
                             String[] latLong = new String[2];
                             latLong = osmGeocoder(crimeAddress);
-                            //latLong = geocoder(crimeAddress);
 
                             //put retrieved data into LatLong object
                             llTbl.OffenseType = aTbl.OffenseType;
                             llTbl.Latitude = latLong[0];
                             llTbl.Longitude = latLong[1];
 
-                            Console.WriteLine("\n\nlat: " + latLong[0] + "\nlong: " + latLong[1]);
+                            
+                            //check if latLong array has data
+                            if (latLong[0] != "" && latLong[1] != "")
+                            {
+                                Console.WriteLine("\n\nlat: " + latLong[0] + "\nlong: " + latLong[1]);
 
-                            //Add LatLong object to list
-                            latLongList.Add(llTbl);
-                        }  
+                                //Add LatLong object to list
+                                latLongList.Add(llTbl);
+                            }
+                        }
                     }
                 }
                 finally
@@ -195,29 +200,32 @@ namespace GecoderConverter
             String[] latLong = new string[2];
 
             //Insert account email for openstreetmap URL
-            string email = "bwbritt@gmail.com"; //<-- put your email address you used to make openstreetmap account here
+            string email = ""; //<-- put your email address you used to make openstreetmap account here
 
             //create openstreetmap URL with parameters
             String url = "https://nominatim.openstreetmap.org/search?q=" + address + "&format=json&polygon=1&email=" + email +"&addressdetails=1";
 
             using (var w = new WebClient())
             {
+                try
+                {
+                    //Retrieve address information as JSON file
+                    var json_data = w.DownloadString(url);
 
-                //Retrieve address information as JSON file
-                var json_data = w.DownloadString(url);
-                var httpClient = new HttpClient();
-                var httpResult = httpClient.GetAsync("https://nominatim.openstreetmap.org/search?q=" + address + "&format=json&polygon=1&email=bwbritt86@gmail.com&addressdetails=1");
+                    //Retrieve latitude and longitude from JSON string
+                    var r = (JArray)JsonConvert.DeserializeObject(json_data);
 
-                //Retrieve latitude and longitude from JSON string
-                var r = (JArray)JsonConvert.DeserializeObject(json_data);
-                latLong[0] = ((JValue)r[0]["lat"]).Value as string;
-                latLong[1] = ((JValue)r[0]["lon"]).Value as string;
-
+                    latLong[0] = ((JValue)r[0]["lat"]).Value as string;
+                    latLong[1] = ((JValue)r[0]["lon"]).Value as string;
+                }
+                catch (Exception ex)
+                {
+                    latLong[0] = "";
+                    latLong[1] = "";
+                }
             }
             return latLong;
-        }
-
-        
+        }       
     }
     
 }
