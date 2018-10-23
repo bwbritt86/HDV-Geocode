@@ -1,20 +1,14 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using System.Data;
-using Geocoding.Google;
 using System.Data.SqlClient;
-using System.Xml.Linq;
-using System.Xml.XPath;
+using Newtonsoft.Json;
 using System.Net;
-
+using Newtonsoft.Json.Linq;
+using System.Net.Http;
 
 
 namespace GecoderConverter
-{
+{ 
     class Program
     {
         static void Main(string[] args)
@@ -136,14 +130,18 @@ namespace GecoderConverter
                                 crimeAddress = stNum.ToString() + "+" + aTbl.Street + "+" + aTbl.Type + ",+HOUSTON,+TX";
                             }
 
+                            System.Threading.Thread.Sleep(1000);
                             //Retrieve Lat-Long coordinates
                             String[] latLong = new String[2];
-                            latLong = geocoder(crimeAddress);
+                            latLong = osmGeocoder(crimeAddress);
+                            //latLong = geocoder(crimeAddress);
 
                             //put retrieved data into LatLong object
                             llTbl.OffenseType = aTbl.OffenseType;
                             llTbl.Latitude = latLong[0];
                             llTbl.Longitude = latLong[1];
+
+                            Console.WriteLine("\n\nlat: " + latLong[0] + "\nlong: " + latLong[1]);
 
                             //Add LatLong object to list
                             latLongList.Add(llTbl);
@@ -192,97 +190,34 @@ namespace GecoderConverter
             }
         }
 
-
-        static String[] geocoder(string address)
+        static String[] osmGeocoder(string address)
         {
-            //Create url used to make requests to Google Geocoding API
-            String[] latLong = new String[2];
-            String apiKey = ""; //Put API Key here
-            String url = "https://maps.googleapis.com/maps/api/geocode/xml?address=" + address + "&sensor=false&key=" + apiKey;
+            String[] latLong = new string[2];
 
-            //Make geocoding request
-            WebResponse response = null;
-            try
+            //Insert account email for openstreetmap URL
+            string email = "bwbritt@gmail.com"; //<-- put your email address you used to make openstreetmap account here
+
+            //create openstreetmap URL with parameters
+            String url = "https://nominatim.openstreetmap.org/search?q=" + address + "&format=json&polygon=1&email=" + email +"&addressdetails=1";
+
+            using (var w = new WebClient())
             {
-                HttpWebRequest request = (HttpWebRequest)WebRequest.Create(url);
-                request.Method = "GET";
-                response = request.GetResponse();
-                if (response != null)
-                {
-                    XPathDocument document = new XPathDocument(response.GetResponseStream());
-                    XPathNavigator navigator = document.CreateNavigator();
 
-                    // get response status
-                    XPathNodeIterator statusIterator = navigator.Select("/GeocodeResponse/status");
-                    while (statusIterator.MoveNext())
-                    {
-                        if (statusIterator.Current.Value != "OK")
-                        {
-                            Console.WriteLine("Error: response status = '" + statusIterator.Current.Value + "'");
-                        }
-                    }
+                //Retrieve address information as JSON file
+                var json_data = w.DownloadString(url);
+                var httpClient = new HttpClient();
+                var httpResult = httpClient.GetAsync("https://nominatim.openstreetmap.org/search?q=" + address + "&format=json&polygon=1&email=bwbritt86@gmail.com&addressdetails=1");
 
-                    // get results
-                    XPathNodeIterator resultIterator = navigator.Select("/GeocodeResponse/result");
-                    while (resultIterator.MoveNext())
-                    {
-                        XPathNodeIterator formattedAddressIterator = resultIterator.Current.Select("formatted_address");
-                        while (formattedAddressIterator.MoveNext())
-                        {
-                            //Console.WriteLine(" formatted_address: " + formattedAddressIterator.Current.Value);
-                        }
+                //Retrieve latitude and longitude from JSON string
+                var r = (JArray)JsonConvert.DeserializeObject(json_data);
+                latLong[0] = ((JValue)r[0]["lat"]).Value as string;
+                latLong[1] = ((JValue)r[0]["lon"]).Value as string;
 
-                        XPathNodeIterator geometryIterator = resultIterator.Current.Select("geometry");
-                        while (geometryIterator.MoveNext())
-                        {
-                            //Console.WriteLine(" geometry: ");
-
-                            XPathNodeIterator locationIterator = geometryIterator.Current.Select("location");
-                            while (locationIterator.MoveNext())
-                            {
-                                //Console.WriteLine("     location: ");
-
-                                XPathNodeIterator latIterator = locationIterator.Current.Select("lat");
-                                while (latIterator.MoveNext())
-                                {
-                                    //Save latitude value
-                                    latLong[0] = (String)latIterator.Current.Value;
-                                }
-
-                                XPathNodeIterator lngIterator = locationIterator.Current.Select("lng");
-                                while (lngIterator.MoveNext())
-                                {
-                                    //save longitude value
-                                    latLong[1] = (String)lngIterator.Current.Value;
-                                }
-                            }
-
-                            XPathNodeIterator locationTypeIterator = geometryIterator.Current.Select("location_type");
-                            while (locationTypeIterator.MoveNext())
-                            {
-                                //Console.WriteLine("         location_type: " + locationTypeIterator.Current.Value);
-                            }
-                        }
-                    }
-                }
             }
-            catch (Exception ex)
-            {
-                Console.WriteLine(ex.Message);
-            }
-            finally
-            {
-                //Console.WriteLine("Clean up");
-                if (response != null)
-                {
-                    response.Close();
-                    response = null;
-                }
-            }
-
-            //Send Lat-Long coordinates back to insertGeocode()
             return latLong;
         }
+
+        
     }
     
 }
