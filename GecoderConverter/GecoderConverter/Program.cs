@@ -14,9 +14,9 @@ namespace GecoderConverter
         static void Main(string[] args)
         {
             //Billy (Do one month at a time)
-            /*insertGeocode("January", "2017");
-            insertGeocode("February", "2017");
-            insertGeocode("March", "2017");*/
+            //insertGeocode("January", "2017");
+            //insertGeocode("February", "2017");
+            //insertGeocode("March", "2017");
 
             //Cody (Do one month at a time)
             /*insertGeocode("April", "2017");
@@ -101,14 +101,19 @@ namespace GecoderConverter
                             aTbl.Type = aTbl.Type.Replace(" ", "");
                             aTbl.Suffix = aTbl.Suffix.Replace(" ", "");
 
-                            //retrieve two numbers from address field and split them
-                            String[] num = aTbl.Number.Split(new[] { '-' },
+                            int stNum = 0;
+
+                            if (aTbl.Number != "UNK")
+                            {
+                                //retrieve two numbers from address field and split them
+                                String[] num = aTbl.Number.Split(new[] { '-' },
                                                                     StringSplitOptions.RemoveEmptyEntries);
 
-                            //Calculate average of two numbers
-                            int numA = Int32.Parse(num[0]);
-                            int numB = Int32.Parse(num[1]);
-                            int stNum = ((Int32.Parse(num[0]) + Int32.Parse(num[1])) / 2);
+                                //Calculate average of two numbers
+                                int numA = Int32.Parse(num[0]);
+                                int numB = Int32.Parse(num[1]);
+                                stNum = ((Int32.Parse(num[0]) + Int32.Parse(num[1])) / 2);
+                            }
 
                             //Create address string for use with geocoder
                             String crimeAddress = null;
@@ -132,18 +137,28 @@ namespace GecoderConverter
 
                             System.Threading.Thread.Sleep(2000);
 
-                            //Retrieve Lat-Long coordinates
                             String[] latLong = new String[2];
-                            latLong = osmGeocoder(crimeAddress);
+                            if (aTbl.Number == "UNK")
+                            {
+                                //skip if latLong coordinates are unknown
+                                latLong[0] = "skipped";
+                                latLong[1] = "skipped";
+                            }
+                            else
+                            {
+                                //Retrieve Lat-Long coordinates
+                                latLong = osmGeocoder(crimeAddress);
 
-                            //put retrieved data into LatLong object
-                            llTbl.OffenseType = aTbl.OffenseType;
-                            llTbl.Latitude = latLong[0];
-                            llTbl.Longitude = latLong[1];
-
+                                //put retrieved data into LatLong object
+                                llTbl.OffenseType = aTbl.OffenseType;
+                                llTbl.Latitude = latLong[0];
+                                llTbl.Longitude = latLong[1];
+                                
+                                
+                            }
                             
                             //check if latLong array has data
-                            if (latLong[0] != "" && latLong[1] != "")
+                            if (latLong[0] != "" && latLong[1] != "" && aTbl.Number != "UNK")
                             {
                                 Console.WriteLine("\n\nlat: " + latLong[0] + "\nlong: " + latLong[1]);
 
