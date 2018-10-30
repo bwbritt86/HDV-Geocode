@@ -38,9 +38,9 @@ namespace GecoderConverter
             //****Wait until November to do these****//
 
             //Billy (Do one month at a time)
-            /*insertGeocode("January", "2016");
+            insertGeocode("January", "2016");
             insertGeocode("February", "2016");
-            insertGeocode("March", "2016");*/
+            insertGeocode("March", "2016");
 
             //Cody (Do one month at a time)
             /*insertGeocode("April", "2016");
@@ -215,7 +215,7 @@ namespace GecoderConverter
             String[] latLong = new string[2];
 
             //Insert account email for openstreetmap URL
-            string email = ""; //<-- put your email address you used to make openstreetmap account here
+            string email = "bwbritt86@gmail.com"; //<-- put your email address you used to make openstreetmap account here
 
             //create openstreetmap URL with parameters
             String url = "https://nominatim.openstreetmap.org/search?q=" + address + "&format=json&polygon=1&email=" + email +"&addressdetails=1";
